@@ -1,7 +1,8 @@
-﻿using Foundation;
+﻿using System;
+using Foundation;
 using UIKit;
 
-namespace Xamarin_iOS_BackgroundFetchDemo
+namespace BackgroundFetchDemo
 {
     // The UIApplicationDelegate for the application. This class is responsible for launching the
     // User Interface of the application, as well as listening (and optionally responding) to application events from iOS.
@@ -18,16 +19,35 @@ namespace Xamarin_iOS_BackgroundFetchDemo
 
         public override bool FinishedLaunching(UIApplication application, NSDictionary launchOptions)
         {
-            // create a new window instance based on the screen size
-            Window = new UIWindow(UIScreen.MainScreen.Bounds);
+            UIApplication.SharedApplication.SetMinimumBackgroundFetchInterval(UIApplication.BackgroundFetchIntervalMinimum);
+            NSLogHelper.Write("BackgroundFetchDemo registered!");
 
-            // If you have defined a root view controller, set it here:
-            // Window.RootViewController = myViewController;
-
-            // make the window visible
-            Window.MakeKeyAndVisible();
+            var settings = UIUserNotificationSettings.GetSettingsForTypes(
+                UIUserNotificationType.Alert | UIUserNotificationType.Badge | UIUserNotificationType.Sound
+                , null);
+            UIApplication.SharedApplication.RegisterUserNotificationSettings(settings);
 
             return true;
+        }
+
+        public override void PerformFetch(UIApplication application, Action<UIBackgroundFetchResult> completionHandler)
+        {
+            NSLogHelper.Write($"BackgroundFetchDemo called PerformFetch at {{{DateTime.Now}}}");
+            if (!(Window.RootViewController is UINavigationController navigationController))
+            {
+                NSLogHelper.Write("BackgroundFetchDemo top viewcontroller should be UINavigationController");
+                completionHandler(UIBackgroundFetchResult.Failed);
+                return;
+            }
+
+            if (!(navigationController.TopViewController is DemoTableViewControler demoTableViewControler))
+            {
+                NSLogHelper.Write("BackgroundFetchDemo should contains a DemoTableViewControler");
+                completionHandler(UIBackgroundFetchResult.Failed);
+                return;
+            }
+            demoTableViewControler.InsertNewObjectForFetch(completionHandler);
+            UIApplication.SharedApplication.ApplicationIconBadgeNumber += 1;
         }
 
         public override void OnResignActivation(UIApplication application)
@@ -48,6 +68,7 @@ namespace Xamarin_iOS_BackgroundFetchDemo
         {
             // Called as part of the transiton from background to active state.
             // Here you can undo many of the changes made on entering the background.
+            UIApplication.SharedApplication.ApplicationIconBadgeNumber = 0;
         }
 
         public override void OnActivated(UIApplication application)

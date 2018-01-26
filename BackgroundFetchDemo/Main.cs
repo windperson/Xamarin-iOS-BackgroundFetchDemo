@@ -1,6 +1,6 @@
 ﻿using UIKit;
 
-namespace Xamarin_iOS_BackgroundFetchDemo
+namespace BackgroundFetchDemo
 {
     public class Application
     {
